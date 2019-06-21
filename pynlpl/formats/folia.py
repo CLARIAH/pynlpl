@@ -81,6 +81,8 @@ LIBVERSION = FOLIAVERSION + '.88' #== FoLiA version + library revision
 #The FoLiA XML namespace
 NSFOLIA = "http://ilk.uvt.nl/folia"
 
+print("WARNING: The FoLiA library pynlpl.formats.folia is being used but this version is now deprecated and is replaced by FoLiAPy (pip install folia), see https://github.com/proycon/foliapy. Please update your software if you are a developer, if you are an end-user you can safely ignore this message.",file=sys.stderr)
+
 
 NSDCOI = "http://lands.let.ru.nl/projects/d-coi/ns/1.0"
 nslen = len(NSFOLIA) + 2
@@ -343,7 +345,6 @@ def parsecommonarguments(object, doc, annotationtype, required, allowed, **kwarg
         object.annotatortype = doc.annotationdefaults[annotationtype][object.set]['annotatortype']
     elif Attrib.ANNOTATOR in required:
         raise ValueError("Annotatortype is required for " + object.__class__.__name__)
-
 
     if 'confidence' in kwargs:
         if not Attrib.CONFIDENCE in supported:
@@ -699,7 +700,7 @@ class AbstractElement(object):
         for key in kwargs:
             if key[0] == '{': #this is a parameter in a different alien namespace, ignore it
                 continue
-            else:
+            elif key not in ("processor","space"): #ignore some FoLiA 2.0 attributes for limited forward compatibility
                 raise ValueError("Parameter '" + key + "' not supported by " + self.__class__.__name__)
 
 
@@ -7356,6 +7357,10 @@ class Document(object):
                         self.metadata[subnode.attrib['id']] = subnode.text
                 else:
                     raise MetaDataError("Encountered a meta element but metadata type is not native!")
+            elif subnode.tag == '{' + NSFOLIA + '}provenance':
+                #forward compatibility with FoLiA 2.0; ignore provenance
+                print("WARNING: Ignoring provenance data. Use foliapy instead of pynlpl.formats.folia for FoLiA v2.0 compatibility!",file=sys.stderr)
+                pass
             elif subnode.tag == '{' + NSFOLIA + '}foreign-data':
                 if self.metadatatype == "native":
                     raise MetaDataError("Encountered a foreign-data element but metadata type is native!")
@@ -7441,7 +7446,7 @@ class Document(object):
                 if 'version' in node.attrib:
                     self.version = node.attrib['version']
                     if checkversion(self.version) > 0:
-                        print("WARNING!!! Document uses a newer version of FoLiA than this library! (" + self.version + " vs " + FOLIAVERSION + "). Any possible subsequent failures in parsing or processing may probably be attributed to this. Upgrade pynlpl to remedy this.",file=sys.stderr)
+                        print("WARNING!!! Document uses a newer version of FoLiA than this library! (" + self.version + " vs " + FOLIAVERSION + "). Any possible subsequent failures in parsing or processing may probably be attributed to this. Upgrade to foliapy (https://github.com/proycon/foliapy) to remedy this.",file=sys.stderr)
                 else:
                     self.version = None
 
